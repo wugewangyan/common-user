@@ -53,9 +53,9 @@
 		</dependency>
 		
 		<dependency>
-			<groupId>com.taobao</groupId>
-			<artifactId>taobao-sdk-sms</artifactId>
-			<version>2.0.0</version>
+		  <groupId>com.napoleon.life.3rd</groupId>
+		  <artifactId>taobao-sdk-sms</artifactId>
+		  <version>2.0.0</version>
 		</dependency>
 	
 		<dependency>
