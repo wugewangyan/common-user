@@ -52,6 +52,7 @@
 			<artifactId>kaptcha</artifactId>
 		</dependency>
 		
+		
 		<dependency>
 		  <groupId>com.napoleon.life.3rd</groupId>
 		  <artifactId>taobao-sdk-sms</artifactId>
