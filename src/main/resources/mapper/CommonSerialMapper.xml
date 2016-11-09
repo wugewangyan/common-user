@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CommonSerial">
+	<resultMap id="BaseResultMap" type="com.napoleon.life.user.bean.CommonSerial">
+	    <id column="id" property="id" jdbcType="BIGINT"/>
+			<result column="machine_addr" property="machineAddr" jdbcType="VARCHAR"/>
+			<result column="remark" property="remark" jdbcType="VARCHAR"/>
+  	</resultMap>
+  	
+  	<sql id = "Base_Column_List">
+		id, machine_addr, remark
+	</sql>
+	
+	<insert id="insert" parameterType="com.napoleon.life.user.bean.CommonSerial" useGeneratedKeys="true" keyProperty="id">
+		 INSERT INTO common_serial ( machine_addr, remark  )  VALUES( #{machineAddr, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR}  ) 
+	</insert>
+	
+	<update id="update" parameterType="com.napoleon.life.user.bean.CommonSerial">
+		update common_serial
+		 <set>
+			<if test="machineAddr != null" >
+		        machine_addr = #{machineAddr, jdbcType=VARCHAR},
+		    </if>
+			<if test="remark != null" >
+		        remark = #{remark, jdbcType=VARCHAR},
+		    </if>
+		</set>
+		
+		 where id = #{id, jdbcType=BIGINT}
+	</update>
+	
+	<delete id="delete" parameterType="java.lang.Long">
+		 DELETE FROM common_serial WHERE id = #{id, jdbcType=BIGINT}
+	</delete>
+	
+	<select id="get" parameterType="java.lang.Long" resultMap="BaseResultMap">
+		 SELECT <include refid="Base_Column_List" /> FROM common_serial WHERE id = #{id, jdbcType=BIGINT}
+	</select>
+	 
+	 
+	<select id="getAll" resultMap="BaseResultMap">
+		 SELECT <include refid="Base_Column_List" /> FROM common_serial
+	</select>
+	
+	<select id="getCommonSerialByIp" resultType="java.lang.Long" parameterType="java.lang.String">
+		 SELECT <include refid="Base_Column_List" /> FROM common_serial where machine_addr = #{machineAddr, jdbcType=VARCHAR}
+	</select>
+	
+</mapper>

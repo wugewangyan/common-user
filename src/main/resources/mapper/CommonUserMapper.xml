@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CommonUser">
+	<resultMap id="BaseResultMap" type="com.napoleon.life.user.bean.CommonUser">
+		<id column="id" property="id" jdbcType="BIGINT" />
+		<result column="user_no" property="userNo" jdbcType="VARCHAR" />
+		<result column="user_name" property="userName" jdbcType="VARCHAR" />
+		<result column="email" property="email" jdbcType="VARCHAR" />
+		<result column="password" property="password" jdbcType="VARCHAR" />
+		<result column="sex" property="sex" jdbcType="VARCHAR" />
+		<result column="phone" property="phone" jdbcType="VARCHAR" />
+		<result column="activate_status" property="activateStatus" jdbcType="TINYINT" />
+		<result column="status" property="status" jdbcType="TINYINT" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+		<result column="header_img" property="headerImg" jdbcType="VARCHAR" />
+		<result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+		<result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		id, user_no, user_name, email, password, sex, phone,
+		activate_status, status, address, header_img, create_date, update_time 
+	</sql>
+
+	<insert id="insert" parameterType="com.napoleon.life.user.bean.CommonUser"
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO common_user ( user_no, user_name, email, password, sex, phone,
+		activate_status, status, address, header_img, create_date, update_time) VALUES(
+		#{userNo, jdbcType=VARCHAR}, #{userName, jdbcType=VARCHAR}, #{email,
+		jdbcType=VARCHAR}, #{password, jdbcType=VARCHAR}, #{sex,
+		jdbcType=VARCHAR}, #{phone, jdbcType=VARCHAR}, #{activateStatus,
+		jdbcType=TINYINT}, #{status, jdbcType=TINYINT}, #{address, jdbcType=VARCHAR},
+		#{headerImg, jdbcType=VARCHAR}, #{createDate,jdbcType=TIMESTAMP}, #{updateTime,
+		jdbcType=TIMESTAMP})
+	</insert>
+
+	<update id="update" parameterType="com.napoleon.life.user.bean.CommonUser">
+		update common_user
+		<set>
+			<if test="userNo != null">
+				user_no = #{userNo, jdbcType=VARCHAR},
+			</if>
+			<if test="userName != null">
+				user_name = #{userName, jdbcType=VARCHAR},
+			</if>
+			<if test="email != null">
+				email = #{email, jdbcType=VARCHAR},
+			</if>
+			<if test="password != null">
+				password = #{password, jdbcType=VARCHAR},
+			</if>
+			<if test="sex != null">
+				sex = #{sex, jdbcType=VARCHAR},
+			</if>
+			<if test="phone != null">
+				phone = #{phone, jdbcType=VARCHAR},
+			</if>
+			<if test="activateStatus != null">
+				activate_status = #{activateStatus, jdbcType=TINYINT},
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=TINYINT},
+			</if>
+			<if test="address != null">
+				address = #{address, jdbcType=VARCHAR},
+			</if>
+			<if test="address != null">
+				header_img = #{headerImg, jdbcType=VARCHAR},
+			</if>
+			<if test="createDate != null">
+				create_date = #{createDate, jdbcType=TIMESTAMP},
+			</if>
+			<if test="updateTime != null">
+				update_time = #{updateTime, jdbcType=TIMESTAMP},
+			</if>
+		</set>
+
+		where id = #{id, jdbcType=BIGINT}
+	</update>
+
+	<delete id="delete" parameterType="java.lang.Long">
+		DELETE FROM common_user WHERE id = #{id, jdbcType=BIGINT}
+	</delete>
+
+	<select id="get" parameterType="java.lang.Long" resultMap="BaseResultMap">
+		SELECT
+		<include refid="Base_Column_List" />
+		FROM common_user WHERE id = #{id, jdbcType=BIGINT}
+	</select>
+
+
+	<select id="getAll" resultMap="BaseResultMap">
+		SELECT
+		<include refid="Base_Column_List" />
+		FROM common_user
+	</select>
+	
+	<select id="findByUserNo" resultMap="BaseResultMap" parameterType="java.lang.String">
+		SELECT
+		<include refid="Base_Column_List" />
+		FROM common_user where user_no = #{userNo, jdbcType=VARCHAR}
+	</select>
+	
+	<select id="findByPhone" resultMap="BaseResultMap" parameterType="java.lang.String">
+		SELECT
+		<include refid="Base_Column_List" />
+		FROM common_user where phone = #{phone, jdbcType=VARCHAR}
+	</select>
+</mapper>
