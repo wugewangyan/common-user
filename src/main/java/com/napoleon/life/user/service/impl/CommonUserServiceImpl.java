@@ -4,6 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.napoleon.life.common.util.StringUtil;
+import com.napoleon.life.exception.CommonException;
+import com.napoleon.life.exception.CommonResultCode;
 import com.napoleon.life.user.bean.CommonUser;
 import com.napoleon.life.user.dao.CommonUserDao;
 import com.napoleon.life.user.service.CommonUserService;
@@ -26,8 +29,15 @@ public class CommonUserServiceImpl implements CommonUserService {
 	
 	@Override
 	@Transactional
-	public void insert(CommonUser userInfo) {
-		this.userDao.add(userInfo);
+	public void insertOrUpdate(CommonUser userInfo) {
+		if(userInfo != null){
+			if(StringUtil.notEmpty(userInfo.getId())){
+				this.userDao.update(userInfo);
+			}else{
+				this.userDao.add(userInfo);
+			}
+		}else{
+			throw new CommonException(CommonResultCode.SYSTEM_ERR);
+		}
 	}
-
 }

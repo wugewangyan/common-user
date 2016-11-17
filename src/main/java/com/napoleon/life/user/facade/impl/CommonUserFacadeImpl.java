@@ -17,11 +17,14 @@ import com.napoleon.life.common.util.DateStyle;
 import com.napoleon.life.common.util.DateUtil;
 import com.napoleon.life.common.util.StringUtil;
 import com.napoleon.life.exception.CommonResultCode;
+import com.napoleon.life.framework.base.BaseDto;
 import com.napoleon.life.framework.enums.LoginSourceEnum;
 import com.napoleon.life.framework.redis.RedisServer;
 import com.napoleon.life.framework.result.CommonRltUtil;
 import com.napoleon.life.user.bean.CommonUser;
 import com.napoleon.life.user.constants.Constants;
+import com.napoleon.life.user.dto.UserEditDto;
+import com.napoleon.life.user.dto.UserForgetPwdDto;
 import com.napoleon.life.user.dto.UserLoginDto;
 import com.napoleon.life.user.dto.UserRegisterDto;
 import com.napoleon.life.user.enums.ActivateStatusEnum;
@@ -85,7 +88,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 				// 如果mobileCode的创建时间大于当前时间120秒，则再次生成验证码，如果小于等于120秒，则提示120秒之后在生成验证码
 				Date createdDate = DateUtil.addSecond(DateUtil.StringToDate(createdTime, DateStyle.YYYY_MM_DD_HH_MM_SS), 120);
 				if(DateUtil.isAfter(createdDate, currentDate)){
-					return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_HAS_ACTIVATE);
+					return CommonRltUtil.createCommonRltToString(CommonResultCode.SEND_PHONE_CODE_FREQUENTLY);
 				}
 			}
 		}
@@ -114,10 +117,14 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			map.put("result_msg", rsp.getBody());
 			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS, map);
 		} catch (ApiException e) {
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_HAS_ACTIVATE);
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.SEND_PHONE_CODE_ERROR);
 		}
 	}
 	
+	/**
+	 * 1. 注册用户
+	 * 2. 如果用户已经存在但是用户未被激活，可以激活用户［也可以修改用户的其它字段如（用户名，密码等）］
+	 */
 	@Override
 	public String register(UserRegisterDto registerInfo) {
 		// 1. 验证手机验证码
@@ -128,26 +135,55 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_CODE_WRONG); 
 		}
 		
-		// 2. 查询该email是否被注册过,如果被注册过，且是激活状态，则提示用户已经注册，请登陆
 		CommonUser userInfo = this.userService.findByPhoneNumber(registerInfo.getPhone());
-		if (userInfo != null && ActivateStatusEnum.ACTIVATE_YES.getCode().equals(userInfo.getActivateStatus())) {
+		if(userInfo == null){
+			userInfo = new CommonUser();//[email, sex, address]
+			userInfo.setUserNo(serialNoService.getSerialNo(Constants.USER_NO));
+			userInfo.setCreateDate(new Timestamp(new Date().getTime()));
+		}else if(ActivateStatusEnum.ACTIVATE_YES.getCode().equals(userInfo.getActivateStatus())){
+			// 2. 查询该phone是否被注册过,如果被注册过，且是激活状态，则提示用户已经注册，请登陆
 			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_NUMBER_HAS_REGISTER);
 		}
 		
-		userInfo = new CommonUser();//[email, sex, address]
-		userInfo.setUserNo(serialNoService.getSerialNo(Constants.USER_NO));
+		// 如果不是激活状态，则可以激活用户
 		userInfo.setUserName(registerInfo.getUserName());
 		userInfo.setPassword(CryptUtil.encrypt(registerInfo.getPassword(), this.secureAppKey));
 		userInfo.setPhone(registerInfo.getPhone());
 		userInfo.setActivateStatus(ActivateStatusEnum.ACTIVATE_YES.getCode());
 		userInfo.setStatus(UserStatusEnum.STATUS_NORMAL.getCode());
-		userInfo.setCreateDate(new Timestamp(new Date().getTime()));
 		userInfo.setUpdateTime(new Timestamp(new Date().getTime()));
-		this.userService.insert(userInfo);
+		this.userService.insertOrUpdate(userInfo);
 		
 		this.redisServer.del(Constants.PHONE_CODE + registerInfo.getPhone());
 		
 		return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+	}
+	
+	
+	@Override
+	public String forgetPwd(UserForgetPwdDto forgetPwdInfo) {
+		// 1. 验证手机验证码
+		String phoneCode = this.redisServer.getHash(Constants.PHONE_CODE + forgetPwdInfo.getPhone(), "mobile_code", null);
+		if(StringUtil.isEmpty(phoneCode)){
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_CODE_EXPIRED); 
+		}else if(!forgetPwdInfo.getPhoneCode().equals(phoneCode)){
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_CODE_WRONG); 
+		}
+		
+		CommonUser userInfo = this.userService.findByPhoneNumber(forgetPwdInfo.getPhone());
+		if(userInfo == null){
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_EXIST);
+		}else if(ActivateStatusEnum.ACTIVATE_NO.getCode().equals(userInfo.getActivateStatus())){
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_ACTIVATE);
+		}else{
+			userInfo.setPassword(CryptUtil.encrypt(forgetPwdInfo.getNewPassword(), this.secureAppKey));
+			userInfo.setUpdateTime(new Timestamp(new Date().getTime()));
+			this.userService.insertOrUpdate(userInfo);
+			
+			this.redisServer.del(Constants.PHONE_CODE + forgetPwdInfo.getPhone());
+			
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+		}
 	}
 	
 	@Override
@@ -197,7 +233,22 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			result.put("access_token", accessToken);
 			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS, result);
 		}else{
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.REJECT_SOURCE_LOGIN);
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.REJECT_SOURCE);
+		}
+	}
+	
+	
+	/**
+	 * 用户退出，删除相应的redis即可
+	 */
+	@Override
+	public String loginOut(BaseDto loginOutInfo) {
+		if(LoginSourceEnum.LOGIN_SOURCE_WLIFE.getCode().equals(loginOutInfo.getSource())){
+			this.redisServer.del(loginOutInfo.getAccess_token());
+			this.redisServer.delHashField(Constants.GLOBAL_REDIS_USER_ID + loginOutInfo.getUserNo(), loginOutInfo.getAccess_token());
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+		}else{
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.REJECT_SOURCE);
 		}
 	}
 	
@@ -217,6 +268,15 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		if(StringUtil.notEmpty(user.getSex())){
 			userInfo.put("sex", user.getSex());
 		}
+		if(StringUtil.notEmpty(user.getHeight())){
+			userInfo.put("height", user.getHeight());
+		}
+		if(StringUtil.notEmpty(user.getBirthday())){
+			userInfo.put("birthday", user.getBirthday());
+		}
+		if(StringUtil.notEmpty(user.getSex())){
+			userInfo.put("sex", user.getSex());
+		}
 		if(StringUtil.notEmpty(user.getAddress())){
 			userInfo.put("address", user.getAddress());
 		}
@@ -228,20 +288,53 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 	}
 	
 	
+	@Override
+	public String editUser(UserEditDto userEditInfo) {
+		CommonUser userInfo = this.userService.findByUserNo(userEditInfo.getUserNo());
+		
+		// 如果用户不存在
+		if(userInfo == null){
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_EXIST);
+		}
+		
+		if(StringUtil.notEmpty(userEditInfo.getNewUserName())){
+			userInfo.setUserName(userEditInfo.getNewUserName());
+		}
+		if(StringUtil.notEmpty(userEditInfo.getUserEmail())){
+			userInfo.setEmail(userEditInfo.getUserEmail());
+		}
+		if(StringUtil.notEmpty(userEditInfo.getUserSex())){
+			userInfo.setSex(userEditInfo.getUserSex());
+		}
+		if(StringUtil.notEmpty(userEditInfo.getUserHeight())){
+			userInfo.setHeight(Integer.valueOf(userEditInfo.getUserHeight()));
+		}
+		if(StringUtil.notEmpty(userEditInfo.getUserBirthday())){
+			try {
+				userInfo.setBirthday(new Timestamp(userEditInfo.getUserBirthday()));
+			} catch (NumberFormatException e) {
+				return CommonRltUtil.createCommonRltToString(CommonResultCode.DATE_FORMAT_ERROR);
+			}
+		}
+		if(StringUtil.notEmpty(userEditInfo.getUserAddress())){
+			userInfo.setAddress(userEditInfo.getUserAddress());
+		}
+		
+		this.userService.insertOrUpdate(userInfo);
+		return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+	}
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	@Override
+	public String viewUser(BaseDto viewUserInfo) {
+		CommonUser userInfo = this.userService.findByUserNo(viewUserInfo.getUserNo());
+		
+		// 如果用户不存在
+		if(userInfo == null){
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_EXIST);
+		}else{
+			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS, this.createUserInfo(userInfo));
+		}
+	}
 	
 	
 }

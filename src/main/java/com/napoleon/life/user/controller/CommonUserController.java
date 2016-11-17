@@ -24,7 +24,10 @@ import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
 import com.napoleon.life.common.util.RSAUtils;
 import com.napoleon.life.framework.base.BaseController;
+import com.napoleon.life.framework.base.BaseDto;
 import com.napoleon.life.framework.resolver.ParamValid;
+import com.napoleon.life.user.dto.UserEditDto;
+import com.napoleon.life.user.dto.UserForgetPwdDto;
 import com.napoleon.life.user.dto.UserLoginDto;
 import com.napoleon.life.user.dto.UserPhoneCodeDto;
 import com.napoleon.life.user.dto.UserRegisterDto;
@@ -41,7 +44,6 @@ public class CommonUserController extends BaseController{
 
 	@Autowired
 	private Producer captchaProducer;
-	
 	
 	/**
 	 * 获取手机验证码
@@ -66,6 +68,17 @@ public class CommonUserController extends BaseController{
 		return this.lifeUserFacade.register(registerInfo);
     }
 	
+	/**
+	 * 忘记密码
+	 * @param forgetPwdInfo
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/forget_pwd", method = RequestMethod.POST)
+    public String forgetPwd(@ParamValid UserForgetPwdDto forgetPwdInfo) {
+		return this.lifeUserFacade.forgetPwd(forgetPwdInfo);
+    }
+	
 	
 	/**
 	 * 登陆
@@ -78,6 +91,40 @@ public class CommonUserController extends BaseController{
 		return this.lifeUserFacade.login(loginInfo);
     }
 	
+	
+	/**
+	 * 退出
+	 * @param loginOutInfo
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/login_out", method = RequestMethod.POST)
+    public String loginOut(@ParamValid BaseDto loginOutInfo) {
+		return this.lifeUserFacade.loginOut(loginOutInfo);
+    }
+	
+	
+	/**
+	 * 修改用户信息
+	 * @param userEditInfo
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/edit_user", method = RequestMethod.POST)
+    public String editUser(@ParamValid UserEditDto userEditInfo) {
+		return this.lifeUserFacade.editUser(userEditInfo);
+    }
+	
+	/**
+	 * 查看用户信息
+	 * @param viewUserInfo
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/view_user", method = RequestMethod.GET)
+    public String viewUser(@ParamValid BaseDto viewUserInfo) {
+		return this.lifeUserFacade.viewUser(viewUserInfo);
+    }
 	
 	
 	/**

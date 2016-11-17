@@ -36,7 +36,17 @@ import com.napoleon.life.common.persistence.Entity;
  	/**
 	 *  性别
 	 */
-    private String sex;  
+    private String sex; 
+    
+    /**
+     * 身高（厘米）
+     */
+    private Integer height;
+    
+    /**
+     * 生日
+     */
+    private Timestamp birthday;
     
  	/**
 	 *  电话号码，密文
@@ -114,8 +124,25 @@ import com.napoleon.life.common.persistence.Entity;
       
     public void setSex(String sex) {  
         this.sex = sex;  
-    }  
-    public String getPhone() {  
+    }
+    
+    public Integer getHeight() {
+		return height;
+	}
+
+	public void setHeight(Integer height) {
+		this.height = height;
+	}
+
+	public Timestamp getBirthday() {
+		return birthday;
+	}
+
+	public void setBirthday(Timestamp birthday) {
+		this.birthday = birthday;
+	}
+
+	public String getPhone() {  
         return phone;  
     }  
       

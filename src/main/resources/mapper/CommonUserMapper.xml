@@ -9,6 +9,8 @@
 		<result column="email" property="email" jdbcType="VARCHAR" />
 		<result column="password" property="password" jdbcType="VARCHAR" />
 		<result column="sex" property="sex" jdbcType="VARCHAR" />
+		<result column="height" property="height" jdbcType="TINYINT" />
+		<result column="birthday" property="birthday" jdbcType="TIMESTAMP" />
 		<result column="phone" property="phone" jdbcType="VARCHAR" />
 		<result column="activate_status" property="activateStatus" jdbcType="TINYINT" />
 		<result column="status" property="status" jdbcType="TINYINT" />
@@ -19,17 +21,18 @@
 	</resultMap>
 
 	<sql id="Base_Column_List">
-		id, user_no, user_name, email, password, sex, phone,
+		id, user_no, user_name, email, password, sex, height, birthday, phone,
 		activate_status, status, address, header_img, create_date, update_time 
 	</sql>
 
 	<insert id="insert" parameterType="com.napoleon.life.user.bean.CommonUser"
 		useGeneratedKeys="true" keyProperty="id">
-		INSERT INTO common_user ( user_no, user_name, email, password, sex, phone,
+		INSERT INTO common_user ( user_no, user_name, email, password, sex, height, birthday, phone,
 		activate_status, status, address, header_img, create_date, update_time) VALUES(
 		#{userNo, jdbcType=VARCHAR}, #{userName, jdbcType=VARCHAR}, #{email,
 		jdbcType=VARCHAR}, #{password, jdbcType=VARCHAR}, #{sex,
-		jdbcType=VARCHAR}, #{phone, jdbcType=VARCHAR}, #{activateStatus,
+		jdbcType=VARCHAR}, #{height, jdbcType=TINYINT}, #{birthday,jdbcType=TIMESTAMP},
+		#{phone, jdbcType=VARCHAR}, #{activateStatus,
 		jdbcType=TINYINT}, #{status, jdbcType=TINYINT}, #{address, jdbcType=VARCHAR},
 		#{headerImg, jdbcType=VARCHAR}, #{createDate,jdbcType=TIMESTAMP}, #{updateTime,
 		jdbcType=TIMESTAMP})
@@ -52,6 +55,12 @@
 			</if>
 			<if test="sex != null">
 				sex = #{sex, jdbcType=VARCHAR},
+			</if>
+			<if test="height != null">
+				height = #{height, jdbcType=TINYINT},
+			</if>
+			<if test="birthday != null">
+				birthday = #{birthday, jdbcType=TIMESTAMP},
 			</if>
 			<if test="phone != null">
 				phone = #{phone, jdbcType=VARCHAR},

@@ -21,6 +21,6 @@ public interface CommonUserService {
 	 * 插入CommonUser信息
 	 * @param userInfo
 	 */
-	public void insert(CommonUser userInfo);
+	public void insertOrUpdate(CommonUser userInfo);
 	
 }
