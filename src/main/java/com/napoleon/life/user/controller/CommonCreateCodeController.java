@@ -21,7 +21,9 @@ import com.napoleon.life.framework.base.BaseController;
 import com.napoleon.life.framework.result.CommonRltUtil;
 import com.napoleon.life.user.createcode.DaoImplTemplate;
 import com.napoleon.life.user.createcode.DaoTemplate;
+import com.napoleon.life.user.createcode.FacadeImplTemplate;
 import com.napoleon.life.user.createcode.JavaBeanTemplate;
+import com.napoleon.life.user.createcode.ServiceImplTemplate;
 import com.napoleon.life.user.service.CommonCreateCodeService;
 
 @Controller
@@ -58,7 +60,9 @@ public class CommonCreateCodeController extends BaseController{
     			JavaBeanTemplate javaBeanTemplate = this.codeService.createJavaBean(tableName);
 	            DaoTemplate daoTemplate = this.codeService.createDao(javaBeanTemplate);
 	            DaoImplTemplate daoImplTemplate = this.codeService.createDaoImpl(javaBeanTemplate, daoTemplate);
-	            this.codeService.createServiceImpl(javaBeanTemplate, daoTemplate);
+	            ServiceImplTemplate serviceImplTemplate = this.codeService.createServiceImpl(javaBeanTemplate, daoTemplate);
+	            FacadeImplTemplate facadeImplTemplate = this.codeService.createFacade(javaBeanTemplate, serviceImplTemplate);
+	            this.codeService.createController(javaBeanTemplate, facadeImplTemplate);
 	            this.codeService.createMapper(javaBeanTemplate, daoTemplate, daoImplTemplate);
     		}
         

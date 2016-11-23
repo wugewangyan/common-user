@@ -1,7 +1,9 @@
 package com.napoleon.life.user.service;
 
+import com.napoleon.life.user.createcode.ControllerTemplate;
 import com.napoleon.life.user.createcode.DaoImplTemplate;
 import com.napoleon.life.user.createcode.DaoTemplate;
+import com.napoleon.life.user.createcode.FacadeImplTemplate;
 import com.napoleon.life.user.createcode.JavaBeanTemplate;
 import com.napoleon.life.user.createcode.MapperImplTemplate;
 import com.napoleon.life.user.createcode.ServiceImplTemplate;
@@ -22,4 +24,12 @@ public interface CommonCreateCodeService {
     
     public MapperImplTemplate createMapper(JavaBeanTemplate javaBeanTemplate, DaoTemplate daoTemplate,
             DaoImplTemplate daoImplTemplate) throws RuntimeException;
+
+
+	public FacadeImplTemplate createFacade(JavaBeanTemplate javaBeanTemplate,
+			ServiceImplTemplate serviceImplTemplate) throws RuntimeException;
+
+
+	public ControllerTemplate createController(JavaBeanTemplate javaBeanTemplate,
+			FacadeImplTemplate serviceImplTemplate) throws RuntimeException;
 }

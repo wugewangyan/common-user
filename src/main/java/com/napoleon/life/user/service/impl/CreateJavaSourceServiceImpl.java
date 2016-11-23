@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.math.BigDecimal;
 import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Date;
@@ -19,16 +20,27 @@ import javax.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.support.JdbcUtils;
+import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.napoleon.life.common.util.StringUtil;
+import com.napoleon.life.common.util.validator.Validator;
 import com.napoleon.life.exception.CommonException;
 import com.napoleon.life.exception.CommonResultCode;
+import com.napoleon.life.framework.base.BaseController;
+import com.napoleon.life.framework.base.BaseDto;
+import com.napoleon.life.framework.resolver.ParamValid;
+import com.napoleon.life.framework.result.CommonRltUtil;
+import com.napoleon.life.user.createcode.ControllerTemplate;
 import com.napoleon.life.user.createcode.DaoImplTemplate;
 import com.napoleon.life.user.createcode.DaoTemplate;
 import com.napoleon.life.user.createcode.Entry;
+import com.napoleon.life.user.createcode.FacadeImplTemplate;
 import com.napoleon.life.user.createcode.JavaBeanTemplate;
 import com.napoleon.life.user.createcode.MapperImplTemplate;
 import com.napoleon.life.user.createcode.SQLBean;
@@ -46,9 +58,17 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
     @Value("${code.base}")
     private String codeBase;
     
-    // 实体的包名称【entry】
+    // 实体的包名称【entity】
     @Value("${entry.pkg.name}")
     private String entryPkgName; 
+    
+    // editDto的包名称【dto】
+    @Value("${edit.dto.pkg.name}")
+    private String editDtoPkgName;
+    
+    // editDto的后缀【EditDto】
+    @Value("${edit.dto.suffix.name}")
+    private String editDtoSuffixName;
     
     // dao层的包名称【dao】
     @Value("${dao.pkg.name}")
@@ -81,6 +101,30 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
     // service层的类名称的后缀【Impl】 ==> InvestOrderServiceImpl
     @Value("${service.impl.suffix.name}")
     private String serviceImplSuffixName;
+    
+    // facade层的包名称【facade】
+    @Value("${facade.pkg.name}")
+    private String facadePkgName;
+    
+    // facade层的类名称的后缀【Facade】 ==> InvestOrderFacade
+    @Value("${facade.suffix.name}")
+    private String facadeSuffixName;
+    
+    // facade实现层的包名称【impl】
+    @Value("${facade.impl.pkg.name}")
+    private String facadeImplPkgName;
+    
+    // facade层的类名称的后缀【Impl】 ==> InvestOrderFacadeImpl
+    @Value("${facade.impl.suffix.name}")
+    private String facadeImplSuffixName;
+    
+    // controller层的包名称【controller】
+    @Value("${controller.pkg.name}")
+    private String controllerPkgName;
+    
+    // controller层的类名称的后缀【Controller】 ==> InvestOrderController
+    @Value("${controller.suffix.name}")
+    private String controllerSuffixName;
 
     // 生成代码的基目录【以/结束D:/yixin/output/】
     @Value("${create.code.location}")
@@ -121,7 +165,9 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
 
         JavaBeanTemplate template = new JavaBeanTemplate();
         template.setPackageName(this.codeBase + "." + this.entryPkgName);  //1. javaBean 所在的package
+        template.setEditDtoPackageName(this.codeBase + "." + this.editDtoPkgName); // editDto 所在的package［dto］
         template.setClassName(className);  // 3. JavaBeanName
+        template.setEditDtoClassName(className + this.editDtoSuffixName); 
         template.setJavaBeanFullName(template.getPackageName() + "." + template.getClassName()); // 该javaBean的包点类名
         
         SQLBean sqlBean = sqlSource.getSQLBean(tableName);
@@ -137,8 +183,11 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
 
         //4. 包含类中的字段（字段名value，类型type，描述remark）
         List<Entry> entrys = new ArrayList<Entry>();
+        // 包含编辑类的字段
+        List<Entry> editEntrys = new ArrayList<Entry>();
         //2. 该javaBean所需要导入的java类
         List<String> imports = new ArrayList<String>();
+        List<String> editDtoImports = new ArrayList<String>();
 
         for (int i = 0; i < columns.size(); i++) {
             Class<?> type = getType(types.get(i), decimalDigits.get(i));
@@ -148,27 +197,51 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
 //            	continue;
 //            }
             String remark = remarks.get(i);
-            entrys.add(new Entry(type.getSimpleName(), value, type, remark));
+
             if(StringUtil.notEmpty(remark) && remark.contains("Y_NO") ){
             	template.setEntityNoToQuery(value);
             	template.setEntityNoToQueryUpcase(this.upperCase(value));
             	template.setEntityNoToQueryJdbc(columns.get(i));
             }
             
-            if (!type.getCanonicalName().startsWith("java.lang")) {
+            String descRemark = remark;
+            if(descRemark.indexOf("(Y") != -1){
+            	descRemark = descRemark.substring(0, descRemark.indexOf("(Y"));
+            }
+            
+            if(StringUtil.notEmpty(remark) && remark.contains("Y_E") ){
+            	editEntrys.add(new Entry(type.getSimpleName(), value, type, descRemark));
+            	if (!type.getCanonicalName().startsWith("java.lang")) {
+                    if (!editDtoImports.contains(type.getCanonicalName())) {
+                    	editDtoImports.add(type.getCanonicalName());
+                    }
+                }
+            }
+            
+            entrys.add(new Entry(type.getSimpleName(), value, type, descRemark));
+        	if (!type.getCanonicalName().startsWith("java.lang")) {
                 if (!imports.contains(type.getCanonicalName())) {
                     imports.add(type.getCanonicalName());
                 }
             }
         }
 
+        if(!editEntrys.isEmpty()){
+        	editDtoImports.add(Validator.class.getCanonicalName());
+        	editDtoImports.add(BaseDto.class.getCanonicalName());
+        }
+        
         template.setImports(imports);
+        template.setEditDtoImports(editDtoImports);
         template.setEntrys(entrys);
+        template.setEditEntrys(editEntrys);
 
         root.put("template", template);
 
         String srcPath = this.createCodeLocation + this.entryPkgName + "/" + className;
         writer(root, "javaBean.ftl", srcPath + ".java");
+        srcPath = this.createCodeLocation + this.editDtoPkgName + "/" + template.getEditDtoClassName();
+        writer(root, "editDtoBean.ftl", srcPath + ".java");
 
         return template;
     }
@@ -278,6 +351,97 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
 
         return template;
     }
+    
+    @Override
+    public FacadeImplTemplate createFacade(JavaBeanTemplate javaBeanTemplate, ServiceImplTemplate serviceImplTemplate)
+            throws RuntimeException {
+        Map<String, Object> root = new HashMap<String, Object>();
+        
+        FacadeImplTemplate template = new FacadeImplTemplate();
+        template.setFacadeName(javaBeanTemplate.getClassName() + this.facadeSuffixName);
+        template.setFacadePackageName(javaBeanTemplate.getCodeBase() + "." + this.facadePkgName);
+        template.setFacadeFullName(template.getFacadePackageName() + "." + template.getFacadeName());
+        
+        template.setFacadeImplName(template.getFacadeName() + this.facadeImplSuffixName);
+        template.setFacadeImplPackageName(template.getFacadePackageName() + "." + this.facadeImplPkgName);
+        template.setFacadeImplFullName(template.getFacadeImplPackageName() + "." + template.getFacadeImplName());
+        
+        template.setJavaBeanName(javaBeanTemplate.getClassName());
+        template.setJavaBeanNameToLower(this.lowerCase(javaBeanTemplate.getClassName()));
+        template.setServiceName(serviceImplTemplate.getServiceName());
+        template.setServiceNameLowerCase(this.lowerCase(serviceImplTemplate.getServiceName()));
+        template.setEditDtoBeanName(javaBeanTemplate.getEditDtoClassName());
+        template.setEntityNoToQueryUpcase(serviceImplTemplate.getEntityNoToQueryUpcase());
+        
+        List<String> imports = new ArrayList<String>();
+        imports.add("com.napoleon.life.core.dto.LifeDeleteDto");
+        imports.add(javaBeanTemplate.getEditDtoPackageName() + "." + javaBeanTemplate.getEditDtoClassName());
+        template.setImports(imports);
+
+        root.put("template", template);
+        
+        String srcPath = this.createCodeLocation + this.facadePkgName + "/";
+        writer(root, "facadeBean.ftl", srcPath + template.getFacadeName() + ".java");
+
+        imports.add(Service.class.getCanonicalName());
+        imports.add(CommonResultCode.class.getCanonicalName());
+        imports.add(StringUtil.class.getCanonicalName());
+        imports.add(Autowired.class.getCanonicalName());
+        imports.add(Timestamp.class.getCanonicalName());
+        imports.add(Date.class.getCanonicalName());
+        imports.add(javaBeanTemplate.getJavaBeanFullName());
+        imports.add(serviceImplTemplate.getServiceFullName());
+        imports.add(CommonRltUtil.class.getCanonicalName());
+        imports.add("com.napoleon.life.user.service.CommonSerialNoService");
+        imports.add(template.getFacadeFullName());
+        
+        
+        srcPath = this.createCodeLocation + this.facadePkgName + "/" + this.facadeImplPkgName + "/";
+        writer(root, "facadeImplBean.ftl", srcPath + template.getFacadeImplName() + ".java");
+
+        return template;
+    }
+    
+    
+    @Override
+    public ControllerTemplate createController(JavaBeanTemplate javaBeanTemplate, FacadeImplTemplate facadeTemplate)
+            throws RuntimeException {
+        Map<String, Object> root = new HashMap<String, Object>();
+        
+        ControllerTemplate template = new ControllerTemplate();
+        
+        template.setFacadeName(facadeTemplate.getFacadeName());
+        template.setFacadeFullName(facadeTemplate.getFacadeFullName());
+        template.setFacadeNameLowerCase(this.lowerCase(template.getFacadeName()));
+        template.setControllerName(javaBeanTemplate.getClassName() + this.controllerSuffixName);
+        template.setControllerPackageName(javaBeanTemplate.getCodeBase() + "." + this.controllerPkgName);
+        template.setJavaBeanName(javaBeanTemplate.getClassName());
+        template.setEditDtoBeanName(javaBeanTemplate.getEditDtoClassName());
+        int index = javaBeanTemplate.getTableName().indexOf("_");
+        template.setRequestPre(javaBeanTemplate.getTableName().substring(0, index).toLowerCase());
+        template.setRequestSuffix(javaBeanTemplate.getTableName().substring(index + 1).toLowerCase());
+        
+        List<String> imports = new ArrayList<String>();
+        imports.add(Autowired.class.getCanonicalName());
+        imports.add(Controller.class.getCanonicalName());
+        imports.add(RequestMapping.class.getCanonicalName());
+        imports.add(RequestMethod.class.getCanonicalName());
+        imports.add(ResponseBody.class.getCanonicalName());
+        imports.add("com.napoleon.life.core.dto.LifeDeleteDto");
+        imports.add(javaBeanTemplate.getEditDtoPackageName() + "." + javaBeanTemplate.getEditDtoClassName());
+        imports.add(template.getFacadeFullName());
+        imports.add(BaseController.class.getCanonicalName());
+        imports.add(ParamValid.class.getCanonicalName());
+        template.setImports(imports);
+        
+        root.put("template", template);
+        
+        String srcPath = this.createCodeLocation + this.controllerPkgName + "/";
+        writer(root, "controllerBean.ftl", srcPath + template.getControllerName() + ".java");
+
+        return template;
+    }
+    
 
     public MapperImplTemplate createMapper(JavaBeanTemplate javaBeanTemplate, DaoTemplate daoTemplate,
             DaoImplTemplate daoImplTemplate) throws RuntimeException {

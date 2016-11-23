@@ -4,9 +4,13 @@ import java.util.List;
 
 public class JavaBeanTemplate {
     private String packageName;
+    private String editDtoPackageName;
     private List<String> imports;
+    private List<String> editDtoImports;
     private String className;
+    private String editDtoClassName;
     private List<Entry> entrys;
+    private List<Entry> editEntrys;
     private String tableName;
     private String primaryKey;
     private String codeBase;
@@ -16,7 +20,15 @@ public class JavaBeanTemplate {
     private String entityNoToQueryJdbc;
     
 
-    public String getPackageName() {
+    public List<String> getEditDtoImports() {
+		return editDtoImports;
+	}
+
+	public void setEditDtoImports(List<String> editDtoImports) {
+		this.editDtoImports = editDtoImports;
+	}
+
+	public String getPackageName() {
         return packageName;
     }
 
@@ -103,5 +115,28 @@ public class JavaBeanTemplate {
 	public void setEntityNoToQueryJdbc(String entityNoToQueryJdbc) {
 		this.entityNoToQueryJdbc = entityNoToQueryJdbc;
 	}
-	
+
+	public List<Entry> getEditEntrys() {
+		return editEntrys;
+	}
+
+	public void setEditEntrys(List<Entry> editEntrys) {
+		this.editEntrys = editEntrys;
+	}
+
+	public String getEditDtoPackageName() {
+		return editDtoPackageName;
+	}
+
+	public void setEditDtoPackageName(String editDtoPackageName) {
+		this.editDtoPackageName = editDtoPackageName;
+	}
+
+	public String getEditDtoClassName() {
+		return editDtoClassName;
+	}
+
+	public void setEditDtoClassName(String editDtoClassName) {
+		this.editDtoClassName = editDtoClassName;
+	}
 }
