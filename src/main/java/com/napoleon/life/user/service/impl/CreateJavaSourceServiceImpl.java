@@ -10,6 +10,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +32,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.napoleon.life.common.util.StringUtil;
 import com.napoleon.life.common.util.validator.Validator;
 import com.napoleon.life.exception.CommonException;
-import com.napoleon.life.exception.CommonResultCode;
 import com.napoleon.life.framework.base.BaseController;
 import com.napoleon.life.framework.base.BaseDto;
 import com.napoleon.life.framework.resolver.ParamValid;
@@ -146,6 +146,8 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
     @Resource(name = "sqlSource")
     private SQLSource sqlSource;
     
+    private List<String> notProductFields = Arrays.asList(new String[]{"createdBy", "createdTime", "lastUpdatedBy", "lastUpdatedTime"});
+    
     @Deprecated
     private Configuration cfg = new Configuration();
 
@@ -192,10 +194,14 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
         for (int i = 0; i < columns.size(); i++) {
             Class<?> type = getType(types.get(i), decimalDigits.get(i));
             String value = JdbcUtils.convertUnderscoreNameToPropertyName(columns.get(i).toLowerCase());
-//            if(template.getPrimaryKey().equals(value)){
-//            	// 不需要将主键字段添加进去，huohe项目不需要bean中包含主键
-//            	continue;
-//            }
+            if(template.getPrimaryKey().equals(value)){
+            	// 不需要将主键字段添加进去，huohe项目不需要bean中包含主键
+            	continue;
+            }
+            if(this.notProductFields.contains(value)){
+            	continue;
+            }
+            
             String remark = remarks.get(i);
 
             if(StringUtil.notEmpty(remark) && remark.contains("Y_NO") ){
@@ -337,7 +343,7 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
         writer(root, "serviceBean.ftl", srcPath + template.getServiceName() + ".java");
 
         imports.add(Service.class.getCanonicalName());
-        imports.add(CommonResultCode.class.getCanonicalName());
+        //imports.add(AbstractModelCode.class.getCanonicalName());
         imports.add(StringUtil.class.getCanonicalName());
         imports.add(Autowired.class.getCanonicalName());
         imports.add(Transactional.class.getCanonicalName());
@@ -384,7 +390,7 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
         writer(root, "facadeBean.ftl", srcPath + template.getFacadeName() + ".java");
 
         imports.add(Service.class.getCanonicalName());
-        imports.add(CommonResultCode.class.getCanonicalName());
+        //imports.add(AbstractModelCode.class.getCanonicalName());
         imports.add(StringUtil.class.getCanonicalName());
         imports.add(Autowired.class.getCanonicalName());
         imports.add(Timestamp.class.getCanonicalName());
@@ -456,14 +462,16 @@ public class CreateJavaSourceServiceImpl implements CommonCreateCodeService{
         template.setDelete(sqlBean.getDeleteSql());
         template.setFindById(sqlBean.getFindByIdSql());
         template.setGetAll(sqlBean.getFindAllSql());
+        template.setBatchInsertPre(sqlBean.getBatchPre());
+        template.setBatchInsertAfter(sqlBean.getBatchAfter());
         template.setBaseColumnList(sqlBean.getBaseColumnList());
-        template.setEntityNoToQueryUpcase(javaBeanTemplate.getEntityNoToQueryUpcase());
-        template.setGetByEntityNo(sqlBean.getFindAllSql() + " WHERE " + javaBeanTemplate.getEntityNoToQueryJdbc() + " = #{" + javaBeanTemplate.getEntityNoToQuery() + ", jdbcType=VARCHAR}");
+        //template.setEntityNoToQueryUpcase(javaBeanTemplate.getEntityNoToQueryUpcase());
+        //template.setGetByEntityNo(sqlBean.getFindAllSql() + " WHERE " + javaBeanTemplate.getEntityNoToQueryJdbc() + " = #{" + javaBeanTemplate.getEntityNoToQuery() + ", jdbcType=VARCHAR}");
 
         template.setPkJavaName(sqlBean.getPkBeanName());
         template.setPkName(sqlBean.getPkName());
         template.setPkNameUpdate("#{" + sqlBean.getPkBeanName() + ", jdbcType=" + sqlBean.getPkJdbcType() + "}");
-        template.setTableName(javaBeanTemplate.getTableName());
+        template.setTableName(javaBeanTemplate.getTableName().toLowerCase());
         template.setPkJdbcType(sqlBean.getPkJdbcType());
 
         List<UpdateEntry> entrys = new ArrayList<UpdateEntry>();

@@ -25,6 +25,10 @@ public class SQLBean {
 	private String pkBeanName;  // javaBean主键字段
 	private String pkJdbcType;  // 主键的jdbcType
 	
+	private String batchPre;
+	
+	private String batchAfter;
+	
 	private String selectNames; 
 	
 	public List<String> getColumnNames() {
@@ -115,6 +119,13 @@ public class SQLBean {
 		return baseColumnList;
 	}
 	
+	public String getBatchPre() {
+		return batchPre;
+	}
+	public String getBatchAfter() {
+		return batchAfter;
+	}
+	
 	public void doCreateSQL(){
 		this.setSaveSql();
 		this.setUpdateSql();
@@ -122,6 +133,7 @@ public class SQLBean {
 		this.setFindByIdSql();
 		this.setFindAllSql();
 		this.setFindAllByPageSql();
+		this.setBatchSaveSql();
 	} 
 	
 	
@@ -137,16 +149,47 @@ public class SQLBean {
 				String column = columnNames.get(i);
 				String javaBeanColumn = this.javaBeanColumns.get(i);
 				String jdbcType = this.jdbcTypes.get(i);
-				if(!this.getPkName().equals(column)){
-					sql.append(column).append(Constants.COMMA);
-					paramList.append("#{").append(javaBeanColumn).append(", jdbcType=").append(jdbcType).append("}").append(Constants.COMMA);
-				}
+				sql.append(column).append(Constants.COMMA);
+				paramList.append("#{").append(javaBeanColumn).append(", jdbcType=").append(jdbcType).append("}").append(Constants.COMMA);
+				
+//				if(!this.getPkName().equals(column)){
+//					sql.append(column).append(Constants.COMMA);
+//					paramList.append("#{").append(javaBeanColumn).append(", jdbcType=").append(jdbcType).append("}").append(Constants.COMMA);
+//				}
 				//paramList.append(Constants.PARAMS_FLAG).append(Constants.COMMA);
 			}
 		}
 		
 		paramList = paramList.deleteCharAt(paramList.lastIndexOf(Constants.COMMA)).append(Constants.RIGHT_BRACES);
 		this.inertSql = sql.deleteCharAt(sql.lastIndexOf(Constants.COMMA)).append(Constants.RIGHT_BRACES).append(paramList).toString();
+	}
+	 
+	
+	private void setBatchSaveSql() {
+		StringBuffer sql = new StringBuffer(Constants.INSERT_PRE_SQL);
+		StringBuffer paramList = new StringBuffer(Constants.LEFT_BRACES);
+		
+		sql.append(this.tableName).append(Constants.LEFT_BRACES); 
+		
+		
+		if(this.columnNames != null && this.columnNames.size() > 0){
+			for(int i = 0; i < columnNames.size(); i++){
+				String column = columnNames.get(i);
+				String javaBeanColumn = this.javaBeanColumns.get(i);
+				String jdbcType = this.jdbcTypes.get(i);
+				sql.append(column).append(Constants.COMMA);
+				paramList.append("#{item.").append(javaBeanColumn).append(", jdbcType=").append(jdbcType).append("}").append(Constants.COMMA);
+				
+//				if(!this.getPkName().equals(column)){
+//					sql.append(column).append(Constants.COMMA);
+//					paramList.append("#{").append(javaBeanColumn).append(", jdbcType=").append(jdbcType).append("}").append(Constants.COMMA);
+//				}
+				//paramList.append(Constants.PARAMS_FLAG).append(Constants.COMMA);
+			}
+		}
+		
+		this.batchPre = sql.deleteCharAt(sql.lastIndexOf(Constants.COMMA)).append(Constants.RIGHT_BRACES).toString();
+		this.batchAfter = paramList.deleteCharAt(paramList.lastIndexOf(Constants.COMMA)).append(Constants.RIGHT_BRACES).toString();
 	}
 	
 	private void setUpdateSql() {
@@ -157,11 +200,12 @@ public class SQLBean {
 			for(int i = 0; i < columnNames.size(); i++){
 				String column = columnNames.get(i);
 				String javaBeanColumn = this.javaBeanColumns.get(i);
+				String jdbcType = this.jdbcTypes.get(i);
 				if(!this.getPkName().equals(column)){
 					//sql.append(column).append(Constants.UPDATE_PARAMS_FALG);
-					sql.append(column).append(" = #{").append(javaBeanColumn).append("}, ");
+					sql.append(column).append(" = #{").append(javaBeanColumn).append(", jdbcType=").append(jdbcType).append("}, ");
 				}else{
-					pkSql = " = #{" + javaBeanColumn + "}, ";
+					pkSql = " = #{" + javaBeanColumn + ", jdbcType=" + jdbcType + "}, ";
 				}
 			}
 		}

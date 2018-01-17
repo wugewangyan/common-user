@@ -16,12 +16,12 @@ import com.napoleon.life.common.util.CryptUtil;
 import com.napoleon.life.common.util.DateStyle;
 import com.napoleon.life.common.util.DateUtil;
 import com.napoleon.life.common.util.StringUtil;
-import com.napoleon.life.exception.CommonResultCode;
 import com.napoleon.life.framework.base.BaseDto;
 import com.napoleon.life.framework.enums.LoginSourceEnum;
 import com.napoleon.life.framework.redis.RedisServer;
 import com.napoleon.life.framework.result.CommonRltUtil;
 import com.napoleon.life.user.bean.CommonUser;
+import com.napoleon.life.user.code.UserModelCode;
 import com.napoleon.life.user.constants.Constants;
 import com.napoleon.life.user.dto.UserEditDto;
 import com.napoleon.life.user.dto.UserForgetPwdDto;
@@ -42,8 +42,6 @@ import com.taobao.api.response.AlibabaAliqinFcSmsNumSendResponse;
 @Service
 public class CommonUserFacadeImpl implements CommonUserFacade {
 
-	private static final Logger logger = LoggerFactory.getLogger(CommonUserFacadeImpl.class);
-	
 	@Autowired
 	private CommonUserService userService;
 	
@@ -88,7 +86,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 				// 如果mobileCode的创建时间大于当前时间120秒，则再次生成验证码，如果小于等于120秒，则提示120秒之后在生成验证码
 				Date createdDate = DateUtil.addSecond(DateUtil.StringToDate(createdTime, DateStyle.YYYY_MM_DD_HH_MM_SS), 120);
 				if(DateUtil.isAfter(createdDate, currentDate)){
-					return CommonRltUtil.createCommonRltToString(CommonResultCode.SEND_PHONE_CODE_FREQUENTLY);
+					return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SEND_PHONE_CODE_FREQUENTLY);
 				}
 			}
 		}
@@ -115,9 +113,9 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			this.redisServer.setHashMap(Constants.PHONE_CODE + phone, map, null);
 			
 			map.put("result_msg", rsp.getBody());
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS, map);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SUCCESS, map);
 		} catch (ApiException e) {
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.SEND_PHONE_CODE_ERROR);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SEND_PHONE_CODE_ERROR);
 		}
 	}
 	
@@ -130,9 +128,9 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		// 1. 验证手机验证码
 		String phoneCode = this.redisServer.getHash(Constants.PHONE_CODE + registerInfo.getPhone(), "mobile_code", null);
 		if(StringUtil.isEmpty(phoneCode)){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_CODE_EXPIRED); 
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_PHONE_CODE_EXPIRED); 
 		}else if(!registerInfo.getPhoneCode().equals(phoneCode)){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_CODE_WRONG); 
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_PHONE_CODE_WRONG); 
 		}
 		
 		CommonUser userInfo = this.userService.findByPhoneNumber(registerInfo.getPhone());
@@ -142,7 +140,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			userInfo.setCreateDate(new Timestamp(new Date().getTime()));
 		}else if(ActivateStatusEnum.ACTIVATE_YES.getCode().equals(userInfo.getActivateStatus())){
 			// 2. 查询该phone是否被注册过,如果被注册过，且是激活状态，则提示用户已经注册，请登陆
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_NUMBER_HAS_REGISTER);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_PHONE_NUMBER_HAS_REGISTER);
 		}
 		
 		// 如果不是激活状态，则可以激活用户
@@ -156,7 +154,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		
 		this.redisServer.del(Constants.PHONE_CODE + registerInfo.getPhone());
 		
-		return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+		return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SUCCESS);
 	}
 	
 	
@@ -165,16 +163,16 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		// 1. 验证手机验证码
 		String phoneCode = this.redisServer.getHash(Constants.PHONE_CODE + forgetPwdInfo.getPhone(), "mobile_code", null);
 		if(StringUtil.isEmpty(phoneCode)){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_CODE_EXPIRED); 
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_PHONE_CODE_EXPIRED); 
 		}else if(!forgetPwdInfo.getPhoneCode().equals(phoneCode)){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.PHONE_CODE_WRONG); 
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_PHONE_CODE_WRONG); 
 		}
 		
 		CommonUser userInfo = this.userService.findByPhoneNumber(forgetPwdInfo.getPhone());
 		if(userInfo == null){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_EXIST);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_ACCOUNT_NOT_EXIST);
 		}else if(ActivateStatusEnum.ACTIVATE_NO.getCode().equals(userInfo.getActivateStatus())){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_ACTIVATE);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_ACCOUNT_NOT_ACTIVATE);
 		}else{
 			userInfo.setPassword(CryptUtil.encrypt(forgetPwdInfo.getNewPassword(), this.secureAppKey));
 			userInfo.setUpdateTime(new Timestamp(new Date().getTime()));
@@ -182,7 +180,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			
 			this.redisServer.del(Constants.PHONE_CODE + forgetPwdInfo.getPhone());
 			
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SUCCESS);
 		}
 	}
 	
@@ -192,23 +190,23 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		
 		// 如果用户不存在
 		if(userInfo == null){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_EXIST);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_ACCOUNT_NOT_EXIST);
 		}
 		
 		String cryptPassword = CryptUtil.encrypt(loginInfo.getPassword(), this.secureAppKey);
 		// 如果密码不正确
 		if(!cryptPassword.equals(userInfo.getPassword())){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.PASSWORD_WRONG);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_PASSWORD_WRONG);
 		}
 		
 		// 如果账号还没有被激活
 		if(ActivateStatusEnum.ACTIVATE_NO.getCode().equals(userInfo.getActivateStatus())){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_ACTIVATE);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_ACCOUNT_NOT_ACTIVATE);
 		}
 		
 		// 如果用户状态不可用［冻结，注销］
 		if(!UserStatusEnum.STATUS_NORMAL.getCode().equals(userInfo.getStatus())){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_STATUS_INVALID);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_ACCOUNT_STATUS_INVALID);
 		}
 		
 		// 首先遍历所有的该用户的access_token，删除失效的access_token
@@ -231,9 +229,9 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			this.redisServer.set(accessToken, user.toJSONString(), Integer.valueOf(this.wLifeAccessTokenRedisExpire));
 			Map<String, String> result = new HashMap<String, String>();
 			result.put("access_token", accessToken);
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS, result);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SUCCESS, result);
 		}else{
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.REJECT_SOURCE);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_REJECT_SOURCE);
 		}
 	}
 	
@@ -246,9 +244,9 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		if(LoginSourceEnum.LOGIN_SOURCE_WLIFE.getCode().equals(loginOutInfo.getSource())){
 			this.redisServer.del(loginOutInfo.getAccess_token());
 			this.redisServer.delHashField(Constants.GLOBAL_REDIS_USER_ID + loginOutInfo.getUserNo(), loginOutInfo.getAccess_token());
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SUCCESS);
 		}else{
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.REJECT_SOURCE);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_REJECT_SOURCE);
 		}
 	}
 	
@@ -294,7 +292,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		
 		// 如果用户不存在
 		if(userInfo == null){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_EXIST);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_ACCOUNT_NOT_EXIST);
 		}
 		
 		if(StringUtil.notEmpty(userEditInfo.getNewUserName())){
@@ -313,7 +311,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 			try {
 				userInfo.setBirthday(new Timestamp(userEditInfo.getUserBirthday()));
 			} catch (NumberFormatException e) {
-				return CommonRltUtil.createCommonRltToString(CommonResultCode.DATE_FORMAT_ERROR);
+				return CommonRltUtil.createCommonRltToString(UserModelCode.USER_DATE_FORMAT_ERROR);
 			}
 		}
 		if(StringUtil.notEmpty(userEditInfo.getUserAddress())){
@@ -321,7 +319,7 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		}
 		
 		this.userService.insertOrUpdate(userInfo);
-		return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS);
+		return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SUCCESS);
 	}
 	
 	@Override
@@ -330,9 +328,9 @@ public class CommonUserFacadeImpl implements CommonUserFacade {
 		
 		// 如果用户不存在
 		if(userInfo == null){
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.ACCOUNT_NOT_EXIST);
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_ACCOUNT_NOT_EXIST);
 		}else{
-			return CommonRltUtil.createCommonRltToString(CommonResultCode.SUCCESS, this.createUserInfo(userInfo));
+			return CommonRltUtil.createCommonRltToString(UserModelCode.USER_SUCCESS, this.createUserInfo(userInfo));
 		}
 	}
 	

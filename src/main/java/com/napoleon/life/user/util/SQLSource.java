@@ -119,6 +119,8 @@ public class SQLSource {
 				String jdbcType = columns.getString(6);
 				if("INT".equalsIgnoreCase(jdbcType)){
 					jdbcTypes.add("INTEGER");
+				}else if("DATETIME".equalsIgnoreCase(jdbcType)){
+					jdbcTypes.add("TIMESTAMP");
 				}else{
 					jdbcTypes.add(jdbcType);
 				}

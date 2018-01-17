@@ -4,9 +4,10 @@ package ${template.packageName};
  import ${being};  
  </#list>  
  
- import com.napoleon.life.common.persistence.Entity;
+ import com.huohe.base.model.BaseModel;
  
- public class ${template.className} implements Entity<Long>{  
+ @SuppressWarnings("serial")
+ public class ${template.className} extends BaseModel{  
    
  <#list template.entrys as field> 
  	/**

@@ -22,6 +22,9 @@ public class MapperImplTemplate {
 	private String tableName;
     private String entityNoToQueryUpcase;
     private String getByEntityNo;
+    
+    private String batchInsertPre;
+    private String batchInsertAfter;
 	
 	public String getNameSpace() {
 		return nameSpace;
@@ -118,5 +121,17 @@ public class MapperImplTemplate {
 	}
 	public void setGetByEntityNo(String getByEntityNo) {
 		this.getByEntityNo = getByEntityNo;
+	}
+	public String getBatchInsertPre() {
+		return batchInsertPre;
+	}
+	public void setBatchInsertPre(String batchInsertPre) {
+		this.batchInsertPre = batchInsertPre;
+	}
+	public String getBatchInsertAfter() {
+		return batchInsertAfter;
+	}
+	public void setBatchInsertAfter(String batchInsertAfter) {
+		this.batchInsertAfter = batchInsertAfter;
 	}
 }

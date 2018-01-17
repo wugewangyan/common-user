@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.napoleon.life.common.util.StringUtil;
 import com.napoleon.life.exception.CommonException;
-import com.napoleon.life.exception.CommonResultCode;
 import com.napoleon.life.user.bean.CommonUser;
+import com.napoleon.life.user.code.UserModelCode;
 import com.napoleon.life.user.dao.CommonUserDao;
 import com.napoleon.life.user.service.CommonUserService;
 
@@ -37,7 +37,7 @@ public class CommonUserServiceImpl implements CommonUserService {
 				this.userDao.add(userInfo);
 			}
 		}else{
-			throw new CommonException(CommonResultCode.SYSTEM_ERR);
+			throw new CommonException(UserModelCode.USER_ERROR);
 		}
 	}
 }

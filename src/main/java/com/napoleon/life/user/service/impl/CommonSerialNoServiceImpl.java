@@ -24,7 +24,7 @@ public class CommonSerialNoServiceImpl implements CommonSerialNoService {
 
 	private SerialNoGenerator guid;
 
-	@PostConstruct
+	//@PostConstruct
 	public void init() {
 		String ipAddr = NetUtil.getLocalHost();
 		logger.info("the local ip : {}", ipAddr);
@@ -40,7 +40,7 @@ public class CommonSerialNoServiceImpl implements CommonSerialNoService {
 		guid = new SerialNoGenerator(workerId);
 	}
 
-	@PreDestroy
+	//@PreDestroy
 	public void destory() {
 		logger.info("The lifeSerialNoService has bean destory");
 	}

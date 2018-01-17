@@ -21,7 +21,7 @@ public class UserEditDto extends BaseDto {
 	@Validator(desc = "用户住址", nullable = true, maxLength = 128)
 	private String userAddress;
 
-	@Validator(desc = "出生年月", nullable = true, isDate = true)
+	@Validator(desc = "出生年月", nullable = true, isLong = true)
 	private Long userBirthday;
 
 	public String getNewUserName() {
